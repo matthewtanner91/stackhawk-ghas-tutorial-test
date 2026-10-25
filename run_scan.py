@@ -36,7 +36,7 @@ try:
     sarif=root/'stackhawk-ghas.sarif'
     if not sarif.exists(): abort('Expected genuine GHAS SARIF export absent')
     raw=sarif.read_text()
-    from sanitize_sarif import sanitize
+    from sanitize_sarif import sanitize, validate_export_urls
     forbidden=[os.environ.get(k,'') for k in ['TEST_APP_ID','TEST_POLICY']]
     for args in [['hawk','op','org','get','--format','json'],['hawk','op','app','get',os.environ['TEST_APP_ID'],'--format','json']]:
         metadata=capture(args)
@@ -51,11 +51,8 @@ try:
     if data.get('version')!='2.1.0': abort('Unexpected SARIF version')
     results=[x for run in data.get('runs',[]) for x in run.get('results',[])]
     if not results: abort('No genuine findings to verify in GitHub')
-    # Whitelist external links: only vendor vulnerability/documentation pages.
-    urls=re.findall(r'https?://[^\s"<>]+',raw)
-    for url in urls:
-        if not url.startswith(('https://docs.stackhawk.com/','https://vuln.stackhawk.com/','https://schemastore.azurewebsites.net/','https://json.schemastore.org/','http://127.0.0.1:8768','https://stackhawk.com','https://www.stackhawk.com','https://app.stackhawk.com/scans/'+sid)):
-            abort('Export has an unexpected external link; publication stopped')
+    try: validate_export_urls(data,sid)
+    except ValueError as exc: abort(str(exc))
     summary={'scan_id':sid,'status':'COMPLETED','scanner':'6.6.0','sarif_results':len(results),'rule_ids':sorted({str(x.get('ruleId')) for x in results}),'scan_errors':len(result.get('errors',[])),'scan_warnings':len(result.get('warnings',[]))}
     print(json.dumps(summary,sort_keys=True))
     # Safe aggregate metrics only; never include app, user, policy, request or header data.
