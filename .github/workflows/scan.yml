@@ -1,0 +1,30 @@
+name: Synthetic StackHawk SARIF validation
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install official HawkScan CLI
+        uses: stackhawk/hawkscan-action@v3.2.0
+        with:
+          apiKey: unused-install-only
+          installCLIOnly: true
+          version: 6.6.0
+      - name: Scan synthetic loopback target and validate export
+        env:
+          HAWK_API_KEY: ${{ secrets.HAWK_API_KEY }}
+          TEST_APP_ID: ${{ secrets.TEST_APP_ID }}
+          TEST_POLICY: ${{ secrets.TEST_POLICY }}
+        run: python3 run_scan.py
+      - name: Upload genuine findings
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: stackhawk-ghas.sarif
+          category: synthetic-stackhawk-dast
+          wait-for-processing: true

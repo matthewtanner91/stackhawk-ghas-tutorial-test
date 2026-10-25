@@ -1,0 +1,8 @@
+app:
+  applicationId: ${TEST_APP_ID}
+  env: Development
+  host: http://127.0.0.1:8768
+  scanPolicy:
+    name: ${TEST_POLICY}
+  openApiConf:
+    filePath: openapi.json

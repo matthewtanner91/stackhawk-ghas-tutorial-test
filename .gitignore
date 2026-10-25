@@ -1,0 +1,4 @@
+__pycache__/
+*.sarif
+scan-*.json
+*.log
