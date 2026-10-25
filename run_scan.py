@@ -17,8 +17,13 @@ try:
     else: abort('Synthetic target did not start')
     version=capture(['hawk','version'])
     if '6.6.0' not in version.stdout: abort('Unexpected scanner version')
+    os.environ['API_KEY']=os.environ['HAWK_API_KEY']
     scan=capture(['hawk','scan','--json-output','--sarif-ghas','stackhawk.yml'])
-    if scan.returncode not in (0,42): abort('Scanner did not complete; raw logs withheld')
+    if scan.returncode not in (0,42):
+        combined=(scan.stdout+' '+scan.stderr).lower()
+        hints=[word for word in ['unauthorized','authentication','api key','invalid','unknown option','no such option','not found','permission denied','connection refused','error'] if word in combined]
+        print('Safe failure categories: '+json.dumps(hints)+'; exit='+str(scan.returncode))
+        abort('Scanner did not complete; raw logs withheld')
     try: result=json.loads(scan.stdout)
     except Exception: abort('Scanner returned no structured result; raw logs withheld')
     sid=result.get('scan',{}).get('id','')
