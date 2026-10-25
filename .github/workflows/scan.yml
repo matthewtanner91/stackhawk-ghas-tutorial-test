@@ -16,6 +16,8 @@ jobs:
           apiKey: unused-install-only
           installCLIOnly: true
           version: 6.6.0
+      - name: Test publication guard
+        run: python3 -m unittest -v test_sanitize_sarif
       - name: Scan synthetic loopback target and validate export
         env:
           HAWK_API_KEY: ${{ secrets.HAWK_API_KEY }}
